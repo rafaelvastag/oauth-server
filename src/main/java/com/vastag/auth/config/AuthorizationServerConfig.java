@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +18,7 @@ import org.springframework.security.oauth2.provider.TokenGranter;
 import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore;
-import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
+import org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore;
 
 import java.util.Arrays;
 
@@ -31,6 +32,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
     @Autowired
     private UserDetailsService userDetailsService;
+
+    @Autowired
+    private RedisConnectionFactory redisConnectionFactory;
 
 
     public AuthorizationServerConfig(PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
@@ -62,11 +66,11 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .secret(passwordEncoder.encode(""))
                 .authorizedGrantTypes("authorization_code", "refresh_token")
                 .scopes("read", "write")
-                .redirectUris("http://aplicacao-cliente-backend", "http://www.foodanalytics.local:8083","http://localhost:8083")
+                .redirectUris("http://aplicacao-cliente-backend", "http://www.foodanalytics.local:8083", "http://localhost:8083")
                 .and()
                 .withClient("webadmin")
                 .authorizedGrantTypes("implicit")
-                .scopes("read","write")
+                .scopes("read", "write")
                 .redirectUris("http://aplicacao-cliente-backend");
     }
 
@@ -74,7 +78,12 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         endpoints.authenticationManager(authenticationManager)
                 .userDetailsService(userDetailsService)
+                .tokenStore(redisTokenStore())
                 .tokenGranter(tokenGranter(endpoints));
+    }
+
+    private TokenStore redisTokenStore() {
+        return new RedisTokenStore(redisConnectionFactory);
     }
 
     private TokenGranter tokenGranter(AuthorizationServerEndpointsConfigurer endpoints) {
