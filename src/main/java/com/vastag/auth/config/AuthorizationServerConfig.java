@@ -78,12 +78,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         endpoints.authenticationManager(authenticationManager)
                 .userDetailsService(userDetailsService)
-                .tokenStore(redisTokenStore())
                 .tokenGranter(tokenGranter(endpoints));
-    }
-
-    private TokenStore redisTokenStore() {
-        return new RedisTokenStore(redisConnectionFactory);
     }
 
     private TokenGranter tokenGranter(AuthorizationServerEndpointsConfigurer endpoints) {
